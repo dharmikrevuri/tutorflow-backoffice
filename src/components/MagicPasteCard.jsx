@@ -8,10 +8,10 @@ const FULL_MONTHS = [
 ];
 
 const SAMPLES = [
-  "Sunita Sharma: Aarav's fee ₹4,000 due 5/06/2025 please",
-  'Hi, Diya Patel fees 3500 pending till 10 Jun',
-  'Rohan Iyer – 6k due tomorrow',
-  'Ananya Reddy paid 2500 today',
+  { id: 'sunita', text: "Sunita Sharma: Aarav's fee ₹4,000 due 5/06/2025 please" },
+  { id: 'diya', text: 'Hi, Diya Patel fees 3500 pending till 10 Jun' },
+  { id: 'rohan', text: 'Rohan Iyer – 6k due tomorrow' },
+  { id: 'ananya', text: 'Ananya Reddy paid 2500 today' },
 ];
 
 const LABEL = 'block text-xs font-semibold uppercase tracking-wide text-slate-500';
@@ -57,6 +57,10 @@ export default function MagicPasteCard({ students, invoices, onAction, today }) 
   // Inline edits to the parsed preview. Keys present here override the parse result.
   const [edits, setEdits] = useState({});
   const [notice, setNotice] = useState(null);
+  // Sample chip whose text is currently in the textarea (null once edited or cleared).
+  const [activeChipId, setActiveChipId] = useState(null);
+  // Sample chip ids whose message was successfully applied; these chips are hidden.
+  const [appliedChips, setAppliedChips] = useState([]);
 
   const parsed = useMemo(
     () => parseWhatsAppMessage(text, students, todayValue),
@@ -92,13 +96,19 @@ export default function MagicPasteCard({ students, invoices, onAction, today }) 
 
   const setEdit = (key, value) => setEdits((prev) => ({ ...prev, [key]: value }));
 
-  const loadSample = (sample) => {
-    setText(sample);
+  const loadSample = (chip) => {
+    setText(chip.text);
+    setActiveChipId(chip.id);
     setEdits({});
     setNotice(null);
   };
 
   const finish = (message) => {
+    // Called only after onAction has been dispatched for the current message.
+    if (activeChipId) {
+      setAppliedChips((prev) => (prev.includes(activeChipId) ? prev : [...prev, activeChipId]));
+    }
+    setActiveChipId(null);
     setText('');
     setEdits({});
     setNotice(message);
@@ -144,22 +154,26 @@ export default function MagicPasteCard({ students, invoices, onAction, today }) 
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Samples</span>
-        {SAMPLES.map((sample) => (
+        {SAMPLES.filter((chip) => !appliedChips.includes(chip.id)).map((chip) => (
           <button
-            key={sample}
+            key={chip.id}
             type="button"
-            onClick={() => loadSample(sample)}
+            onClick={() => loadSample(chip)}
             className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100"
           >
-            {sample}
+            {chip.text}
           </button>
         ))}
+        {appliedChips.length === SAMPLES.length && (
+          <span className="text-xs text-slate-400">All sample messages applied</span>
+        )}
       </div>
 
       <textarea
         value={text}
         onChange={(e) => {
           setText(e.target.value);
+          setActiveChipId(null);
           setEdits({});
           setNotice(null);
         }}

@@ -36,6 +36,8 @@ function App() {
   const [stressOn, setStressOn] = useState(false);
   const [keyOverride, setKeyOverride] = useState(null);
   const [whyOpen, setWhyOpen] = useState(false);
+  // Bumped on each sample-data reset so MagicPasteCard remounts with fresh state.
+  const [resetCount, setResetCount] = useState(0);
 
   // Persist whenever state changes.
   useEffect(() => {
@@ -146,6 +148,7 @@ function App() {
       return;
     }
     setState(resetState());
+    setResetCount((n) => n + 1);
   };
 
   return (
@@ -184,6 +187,7 @@ function App() {
         </header>
 
         <MagicPasteCard
+          key={resetCount}
           students={state.students}
           invoices={state.invoices}
           onAction={handleInvoiceAction}
